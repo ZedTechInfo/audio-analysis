@@ -7,3 +7,4 @@ docs/
 autoace-audio-trial/
 evaluation_batch/*
 *.md
+!README.md
