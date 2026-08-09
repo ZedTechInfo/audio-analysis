@@ -1,0 +1,45 @@
+<div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+    {% if errors %}
+    <div class="bg-red-50 p-4 border-b border-red-200">
+        <h4 class="text-red-800 font-bold mb-2">Processing Errors ({{ errors|length }})</h4>
+        <ul class="list-disc pl-5 text-sm text-red-700">
+            {% for err in errors %}
+            <li><strong>{{ err.filename }}:</strong> {{ err.error }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    <div class="overflow-x-auto">
+        <table class="min-w-full text-sm text-left">
+            <thead class="bg-gray-50 text-gray-600 font-medium border-b border-gray-200">
+                <tr>
+                    <th class="px-4 py-3">File</th>
+                    <th class="px-4 py-3">Tone</th>
+                    <th class="px-4 py-3">Intensity</th>
+                    <th class="px-4 py-3">Noise Present</th>
+                    <th class="px-4 py-3">Quality</th>
+                    <th class="px-4 py-3">Confidence</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+                {% for row in results %}
+                <tr class="hover:bg-gray-50">
+                    <td class="px-4 py-3 font-mono text-xs">{{ row.filename }}</td>
+                    <td class="px-4 py-3 capitalize">{{ row.emotional_tone.value }}</td>
+                    <td class="px-4 py-3 capitalize">{{ row.emotional_intensity.value }}</td>
+                    <td class="px-4 py-3">
+                        {% if row.background_noise_present %}
+                            <span class="text-red-600">{{ row.background_noise_severity.value }}</span>
+                        {% else %}
+                            <span class="text-green-600">None</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-4 py-3 capitalize">{{ row.audio_quality.value }}</td>
+                    <td class="px-4 py-3">{{ "%.2f"|format(row.confidence) }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>

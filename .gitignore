@@ -1,0 +1,9 @@
+.env
+__pycache__/
+*.py[cod]
+output/
+temp_uploads/
+docs/
+autoace-audio-trial/
+evaluation_batch/*
+*.md
