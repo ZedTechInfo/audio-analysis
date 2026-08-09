@@ -26,9 +26,9 @@ class Settings:
     ser_model_id: str = os.getenv("AUTOACE_SER_MODEL_ID", "superb/wav2vec2-base-superb-er")
     ser_window_seconds: int = _int_env("AUTOACE_SER_WINDOW_SECONDS", 8)
     ser_hop_seconds: int = _int_env("AUTOACE_SER_HOP_SECONDS", 4)
-    max_upload_bytes: int = _int_env("AUTOACE_MAX_UPLOAD_BYTES", 100 * 1024 * 1024)
+    max_upload_bytes: int = _int_env("AUTOACE_MAX_UPLOAD_BYTES", 500 * 1024 * 1024)
     max_uncompressed_bytes: int = _int_env("AUTOACE_MAX_UNCOMPRESSED_BYTES", 500 * 1024 * 1024)
-    max_files: int = _int_env("AUTOACE_MAX_FILES", 500)
+    max_files: int = _int_env("AUTOACE_MAX_FILES", 5000)
     max_audio_seconds: int = _int_env("AUTOACE_MAX_AUDIO_SECONDS", 3600)
     worker_count: int = _int_env("AUTOACE_WORKER_COUNT", 1)
     vad_top_db: int = _int_env("AUTOACE_VAD_TOP_DB", 30)
@@ -40,6 +40,7 @@ class Settings:
         "AUTOACE_REQUIRE_API_KEY", "true" if os.getenv("AUTOACE_ENVIRONMENT") == "production" else "false"
     ).lower() == "true"
     allow_signup: bool = os.getenv("AUTOACE_ALLOW_SIGNUP", "true").lower() == "true"
+    static_version: str = os.getenv("AUTOACE_STATIC_VERSION", "2026-08-09-1")
 
 
 settings = Settings()

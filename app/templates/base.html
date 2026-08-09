@@ -7,10 +7,10 @@
     <meta name="description" content="AutoAce AI Evaluator - Evaluate audio files using AI models.">
     <meta name="keywords" content="AutoAce Assessment, AI Evaluator, Audio Evaluation, Machine Learning, Deep Learning">
     <meta name="author" content="Gary Mhone">
-    <link rel="stylesheet" href="{{ url_for('static', path='app.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', path='app.css') }}?v={{ static_version }}">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.26.17/dist/sweetalert2.all.min.js" defer></script>
-    <script src="{{ url_for('static', path='navigation.js') }}" defer></script>
-    <script src="{{ url_for('static', path='pagination.js') }}" defer></script>
+    <script src="{{ url_for('static', path='navigation.js') }}?v={{ static_version }}" defer></script>
+    <script src="{{ url_for('static', path='pagination.js') }}?v={{ static_version }}" defer></script>
     {% block head %}{% endblock %}
 </head>
 <body data-view="dashboard">

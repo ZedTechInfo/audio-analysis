@@ -22,6 +22,7 @@ from app.services.auth import AuthStore
 
 app = FastAPI(title="AutoAce Voice Assessment", version="1.0.0")
 templates = Jinja2Templates(directory=str(settings.project_root / "app" / "templates"))
+templates.env.globals["static_version"] = settings.static_version
 app.mount("/static", StaticFiles(directory=str(settings.project_root / "app" / "static")), name="static")
 job_manager = JobManager(settings)
 auth_store = AuthStore(settings.job_db)
@@ -215,9 +216,11 @@ async def create_job(batch_file: UploadFile = File(...)):
         return JobCreated(job_id=job_id, status="queued")
     except BatchValidationError as exc:
         shutil.rmtree(job_dir, ignore_errors=True)
+        _log_warning(f"Upload rejected: {exc}", job_id=job_id, artifact="upload")
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except Exception as exc:
         shutil.rmtree(job_dir, ignore_errors=True)
+        _log_warning(f"Upload failed: {exc}", job_id=job_id, artifact="upload")
         raise HTTPException(status_code=500, detail="Unable to create processing job") from exc
     finally:
         await batch_file.close()
@@ -274,9 +277,11 @@ async def create_audio_job(audio_file: UploadFile = File(...)):
         return JobCreated(job_id=job_id, status="queued")
     except BatchValidationError as exc:
         shutil.rmtree(job_dir, ignore_errors=True)
+        _log_warning(f"Audio upload rejected: {exc}", job_id=job_id, artifact="upload")
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except Exception as exc:
         shutil.rmtree(job_dir, ignore_errors=True)
+        _log_warning(f"Audio upload failed: {exc}", job_id=job_id, artifact="upload")
         raise HTTPException(status_code=500, detail="Unable to create processing job") from exc
     finally:
         await audio_file.close()

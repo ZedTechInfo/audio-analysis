@@ -38,3 +38,30 @@ class BatchSecurityTests(unittest.TestCase):
             )
             with self.assertRaises(BatchValidationError):
                 extract_batch(archive_path, destination, limited)
+
+    def test_counts_files_not_directory_entries(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            archive_path = root / "folder.zip"
+            destination = root / "extract"
+            with zipfile.ZipFile(archive_path, "w") as archive:
+                archive.writestr("audio/", "")
+                for index in range(3):
+                    archive.writestr(f"audio/call_{index}.wav", b"\x00" * 10)
+
+            limited = Settings(upload_dir=root, job_db=root / "jobs.sqlite3", max_files=3)
+            extract_batch(archive_path, destination, limited)
+            self.assertEqual(len(list(destination.rglob("*.wav"))), 3)
+
+    def test_rejects_too_many_files(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            archive_path = root / "many.zip"
+            destination = root / "extract"
+            with zipfile.ZipFile(archive_path, "w") as archive:
+                for index in range(4):
+                    archive.writestr(f"call_{index}.wav", b"\x00" * 10)
+
+            limited = Settings(upload_dir=root, job_db=root / "jobs.sqlite3", max_files=3)
+            with self.assertRaises(BatchValidationError):
+                extract_batch(archive_path, destination, limited)

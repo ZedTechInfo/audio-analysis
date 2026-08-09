@@ -40,22 +40,20 @@ def extract_batch(archive_path: Path, destination: Path, settings: Settings) -> 
 
     with archive:
         members = archive.infolist()
-        if len(members) > settings.max_files:
+        file_members = [member for member in members if not member.is_dir()]
+        if len(file_members) > settings.max_files:
             raise BatchValidationError("Batch contains too many archive entries")
 
-        total_size = sum(member.file_size for member in members)
+        total_size = sum(member.file_size for member in file_members)
         if total_size > settings.max_uncompressed_bytes:
             raise BatchValidationError("Uncompressed batch exceeds the maximum allowed size")
 
         root = destination.resolve()
-        for member in members:
+        for member in file_members:
             name = member.filename.replace("\\", "/")
             target = (destination / name).resolve()
             if name.startswith("/") or target != root and root not in target.parents:
                 raise BatchValidationError("Archive contains an unsafe path")
-            if member.is_dir():
-                target.mkdir(parents=True, exist_ok=True)
-                continue
             if (member.external_attr >> 16) & 0o170000 == 0o120000:
                 raise BatchValidationError("Archive contains a symbolic link")
             target.parent.mkdir(parents=True, exist_ok=True)

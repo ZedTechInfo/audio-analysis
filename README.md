@@ -281,9 +281,9 @@ complexity. Hybrid mode remains available for controlled comparison.
 
 | Variable | Default | Purpose |
 | --- | ---: | --- |
-| `AUTOACE_MAX_UPLOAD_BYTES` | `104857600` | Maximum uploaded archive/file size |
+| `AUTOACE_MAX_UPLOAD_BYTES` | `524288000` | Maximum uploaded archive/file size |
 | `AUTOACE_MAX_UNCOMPRESSED_BYTES` | `524288000` | Maximum extracted ZIP size |
-| `AUTOACE_MAX_FILES` | `500` | Maximum files per batch |
+| `AUTOACE_MAX_FILES` | `5000` | Maximum files per batch |
 | `AUTOACE_MAX_AUDIO_SECONDS` | `3600` | Maximum duration per audio file |
 | `AUTOACE_NOISE_FLOOR_THRESHOLD` | `0.001` | Minimum meaningful noise floor |
 | `AUTOACE_NOISE_RATIO_THRESHOLD` | `0.03` | Noise-to-speech ratio threshold |
