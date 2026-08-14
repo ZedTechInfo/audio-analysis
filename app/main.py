@@ -198,10 +198,11 @@ async def readiness():
 
 
 @app.post("/api/jobs", response_model=JobCreated, dependencies=[Depends(require_api_key)])
-async def create_job(batch_file: UploadFile = File(...)):
+def create_job(batch_file: UploadFile = File(...)):
+    """Create a ZIP batch job. Sync handler so blocking upload/zip I/O runs in a thread."""
     filename = batch_file.filename or ""
     if not filename.lower().endswith(".zip"):
-        await batch_file.close()
+        batch_file.file.close()
         raise HTTPException(status_code=400, detail="Only ZIP files are supported")
 
     job_id = __import__("uuid").uuid4().hex
@@ -223,12 +224,14 @@ async def create_job(batch_file: UploadFile = File(...)):
         _log_warning(f"Upload failed: {exc}", job_id=job_id, artifact="upload")
         raise HTTPException(status_code=500, detail="Unable to create processing job") from exc
     finally:
-        await batch_file.close()
+        batch_file.file.close()
 
 
 @app.post("/upload", response_class=HTMLResponse, dependencies=[Depends(require_api_key)])
 async def dashboard_upload(request: Request, batch_file: UploadFile = File(...)):
-    created = await create_job(batch_file)
+    from starlette.concurrency import run_in_threadpool
+
+    created = await run_in_threadpool(create_job, batch_file)
     return HTMLResponse(
         f"""<div id='job-status' class='rounded border border-indigo-200 bg-indigo-50 p-4'>
 Job <code>{created.job_id}</code> queued. Processing...</div>
@@ -261,11 +264,11 @@ Job <code>{created.job_id}</code> queued. Processing...</div>
 
 
 @app.post("/api/jobs/audio", response_model=JobCreated, dependencies=[Depends(require_api_key)])
-async def create_audio_job(audio_file: UploadFile = File(...)):
+def create_audio_job(audio_file: UploadFile = File(...)):
     """Create the normal job lifecycle for one validated audio file."""
     filename = Path((audio_file.filename or "").replace("\\", "/")).name
     if not filename or Path(filename).suffix.lower() not in SUPPORTED_AUDIO:
-        await audio_file.close()
+        audio_file.file.close()
         raise HTTPException(status_code=400, detail="Unsupported audio type")
     job_id = __import__("uuid").uuid4().hex
     job_dir = settings.upload_dir / job_id
@@ -284,7 +287,7 @@ async def create_audio_job(audio_file: UploadFile = File(...)):
         _log_warning(f"Audio upload failed: {exc}", job_id=job_id, artifact="upload")
         raise HTTPException(status_code=500, detail="Unable to create processing job") from exc
     finally:
-        await audio_file.close()
+        audio_file.file.close()
 
 
 def _history_item(job: dict) -> JobHistoryItem:

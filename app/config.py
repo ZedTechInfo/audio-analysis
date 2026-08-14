@@ -16,16 +16,25 @@ def _int_env(name: str, default: int) -> int:
     return int(value) if value else default
 
 
+def _path_env(name: str, default: Path) -> Path:
+    value = os.getenv(name)
+    return Path(value) if value else default
+
+
 @dataclass(frozen=True)
 class Settings:
     project_root: Path = PROJECT_ROOT
-    upload_dir: Path = PROJECT_ROOT / "temp_uploads"
-    job_db: Path = PROJECT_ROOT / "temp_uploads" / "jobs.sqlite3"
+    upload_dir: Path = _path_env("AUTOACE_UPLOAD_DIR", PROJECT_ROOT / "temp_uploads")
+    job_db: Path = _path_env(
+        "AUTOACE_JOB_DB",
+        (_path_env("AUTOACE_UPLOAD_DIR", PROJECT_ROOT / "temp_uploads") / "jobs.sqlite3"),
+    )
     environment: str = os.getenv("AUTOACE_ENVIRONMENT", "development")
-    inference_engine: str = os.getenv("AUTOACE_INFERENCE_ENGINE", "baseline")
+    inference_engine: str = os.getenv("AUTOACE_INFERENCE_ENGINE", "hybrid")
     ser_model_id: str = os.getenv("AUTOACE_SER_MODEL_ID", "superb/wav2vec2-base-superb-er")
     ser_window_seconds: int = _int_env("AUTOACE_SER_WINDOW_SECONDS", 8)
     ser_hop_seconds: int = _int_env("AUTOACE_SER_HOP_SECONDS", 4)
+    ser_weight: float = float(os.getenv("AUTOACE_SER_WEIGHT", "0.5"))
     max_upload_bytes: int = _int_env("AUTOACE_MAX_UPLOAD_BYTES", 500 * 1024 * 1024)
     max_uncompressed_bytes: int = _int_env("AUTOACE_MAX_UNCOMPRESSED_BYTES", 500 * 1024 * 1024)
     max_files: int = _int_env("AUTOACE_MAX_FILES", 5000)

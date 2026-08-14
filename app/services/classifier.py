@@ -11,10 +11,32 @@ _SER_EXTRACTOR = None
 _SER_MODEL = None
 _SER_LOCK = threading.Lock()
 
+_TONES = ("neutral", "satisfied", "frustrated", "upset", "distressed")
+# The SER checkpoint only has four classes and no "distressed"; the heuristic
+# supplies the fifth tone in the ensemble.
+_SER_TO_TONE = {"neu": "neutral", "hap": "satisfied", "ang": "upset", "sad": "frustrated"}
+
 
 def _confidence_from_evidence(evidence: float, floor: float = 0.42, ceiling: float = 0.94) -> float:
     """Map rule evidence to a bounded, deliberately non-probabilistic score."""
     return round(float(np.clip(floor + (ceiling - floor) * evidence, floor, ceiling)), 3)
+
+
+def _ensemble_tone(mean_probabilities, id2label: dict, h_tone: str, h_conf: float, ser_weight: float):
+    """Blend the SER posterior (4 classes) with the heuristic vote (5 classes).
+
+    SER mass is remapped into the five-tone space; the heuristic adds a weighted
+    vote for its own tone, so all five tones (including distressed) can win.
+    Returns (tone, confidence).
+    """
+    scores = {tone: 0.0 for tone in _TONES}
+    for index, probability in enumerate(mean_probabilities):
+        tone = _SER_TO_TONE.get(str(id2label[index]).lower(), "neutral")
+        scores[tone] += ser_weight * float(probability)
+    scores[h_tone] += (1.0 - ser_weight) * h_conf
+    tone = max(scores, key=scores.get)
+    total = sum(scores.values()) or 1.0
+    return tone, _confidence_from_evidence(scores[tone] / total, 0.4, 0.94)
 
 
 def _load_ser_model():
@@ -126,28 +148,10 @@ def predict_emotion(
     if not probabilities:
         return _heuristic_emotion(feature_vector, waveform, sample_rate)
 
-    probability_matrix = np.asarray(probabilities)
-    mean_probabilities = np.mean(probability_matrix, axis=0)
-    label_index = int(np.argmax(mean_probabilities))
-    source_label = str(model.config.id2label[label_index]).lower()
-    # The base model only has four classes (neu, hap, ang, sad) and does not
-    # natively support AutoAce's separate distressed category.
-    tone = {
-        "neu": "neutral",
-        "hap": "satisfied",
-        "ang": "upset",
-        "sad": "frustrated",
-    }.get(source_label, "neutral")
-    ranked = np.sort(mean_probabilities)
-    top_probability = float(ranked[-1])
-    margin = float(ranked[-1] - ranked[-2]) if len(ranked) > 1 else top_probability
-    entropy = float(-np.sum(mean_probabilities * np.log(np.clip(mean_probabilities, 1e-9, 1.0))))
-    normalized_entropy = entropy / max(np.log(len(mean_probabilities)), 1.0)
-    chunk_agreement = float(np.mean(np.argmax(probability_matrix, axis=1) == label_index))
-    confidence = _confidence_from_evidence(
-        float(np.mean([top_probability, np.clip(margin * 2.0, 0.0, 1.0), 1.0 - normalized_entropy, chunk_agreement])),
-        0.35,
-        0.94,
+    mean_probabilities = np.mean(np.asarray(probabilities), axis=0)
+    h_tone, _, h_conf = _heuristic_emotion(feature_vector, waveform, sample_rate)
+    tone, confidence = _ensemble_tone(
+        mean_probabilities, model.config.id2label, h_tone, h_conf, settings.ser_weight
     )
     intensity = "high" if confidence >= 0.75 else "medium" if confidence >= 0.5 else "low"
     return tone, intensity, confidence
