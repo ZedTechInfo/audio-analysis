@@ -19,8 +19,8 @@ COPY scripts /app/scripts
 COPY .env.example /app/.env.example
 
 RUN useradd --create-home --uid 10001 appuser \
-    && mkdir -p /app/temp_uploads \
-    && chown -R appuser:appuser /app
+    && mkdir -p /app/temp_uploads /home/appuser/.cache/huggingface \
+    && chown -R appuser:appuser /app /home/appuser
 USER appuser
 
 EXPOSE 8000
