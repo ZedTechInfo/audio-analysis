@@ -6,9 +6,15 @@ silence. It accepts individual audio files or ZIP batches, processes audio
 locally, validates every prediction against a strict schema, and keeps a
 searchable history for future reference and comparison.
 
-The project was created for the AutoAce voice-tone technical trial. The
-implementation favors deterministic local signal processing for predictable
-cost and privacy, with an optional local speech-emotion model for comparison.
+The project was created for the AutoAce voice-tone technical trial. It runs a
+hybrid emotion classifier by default — a local speech-emotion model ensembled
+with deterministic signal processing — keeping all inference local for
+predictable cost and privacy. A pure-deterministic `baseline` engine remains
+available for the lowest cost/latency.
+
+> **Live deployment:** https://autoace.propeasezm.com (Coolify, hybrid engine).
+> Access credentials and the as-built deployment record are in
+> `docs/formal/DEPLOYMENT_AND_ACCESS.md`.
 
 ## Contents
 
@@ -267,15 +273,21 @@ be configured before enabling end-user recovery in production.
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
-| `AUTOACE_INFERENCE_ENGINE` | `baseline` | `baseline` or `hybrid` |
+| `AUTOACE_INFERENCE_ENGINE` | `hybrid` | `hybrid` (SER + heuristic ensemble) or `baseline` (deterministic only) |
+| `AUTOACE_SER_WEIGHT` | `0.5` | Ensemble blend weight: `0`=heuristic only, `1`=SER only |
 | `AUTOACE_SER_MODEL_ID` | `superb/wav2vec2-base-superb-er` | Local SER checkpoint for hybrid mode |
 | `AUTOACE_SER_WINDOW_SECONDS` | `8` | SER inference window |
 | `AUTOACE_SER_HOP_SECONDS` | `4` | SER window hop |
 | `AUTOACE_WORKER_COUNT` | `1` | Background worker count |
 
-The deterministic baseline is the recommended default because the supplied
-pilot showed stronger tone and intensity results with lower operational
-complexity. Hybrid mode remains available for controlled comparison.
+The default is the hybrid ensemble: it blends the SER posterior with the
+deterministic vote (`AUTOACE_SER_WEIGHT`), so it spans all five tones and
+cannot collapse to a single SER class the way the raw checkpoint did. On the
+three-call pilot it matches the deterministic engine's tone accuracy while
+providing the two-model comparison the trial calls for. The `baseline` engine
+(`AUTOACE_INFERENCE_ENGINE=baseline`) remains available for the lowest
+cost/latency. See `docs/formal/VALIDATION_REPORT.md` for the comparison and its
+honest caveats.
 
 ### Upload and audio limits
 
@@ -333,7 +345,7 @@ Expected responses include:
 and:
 
 ```json
-{"status":"ready","engine":"baseline"}
+{"status":"ready","engine":"hybrid"}
 ```
 
 ## Using the Dashboard
