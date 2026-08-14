@@ -15,7 +15,6 @@ RUN python -m pip install --upgrade pip \
 
 COPY app /app/app
 COPY scripts /app/scripts
-COPY EVALUATION.md /app/EVALUATION.md
 COPY .env.example /app/.env.example
 
 RUN useradd --create-home --uid 10001 appuser \
